@@ -14,3 +14,17 @@ import type { KeyboardEvent } from "react";
 export function isComposing(event: KeyboardEvent): boolean {
   return event.nativeEvent.isComposing || event.keyCode === 229;
 }
+
+/**
+ * Keep a keydown from submitting while an input method is still composing.
+ *
+ * `prompt-area`, which draws the chat composer, runs the caller's `onKeyDown` first and skips
+ * its own submit when the event was already default-prevented, so passing this as `onKeyDown`
+ * is the whole fix there: the Enter that confirms a character never reaches the submit, and
+ * a plain Enter passes through untouched.
+ */
+export function preventSubmitWhileComposing(event: KeyboardEvent): void {
+  if (isComposing(event)) {
+    event.preventDefault();
+  }
+}

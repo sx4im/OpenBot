@@ -37,6 +37,7 @@ import {
   mediaTypeOf,
   shouldClaimPaste,
 } from "@/lib/channels/attachments";
+import { preventSubmitWhileComposing } from "@/lib/composing";
 import { newId } from "@/lib/new-id";
 import { cn } from "@/lib/utils";
 import { Button } from "../../ui/button";
@@ -1722,6 +1723,7 @@ export function Composer({
                 maxHeight={COMPACT_MAX_HEIGHT_PX}
                 minHeight={COMPACT_MIN_HEIGHT_PX}
                 onChange={handleChange}
+                onKeyDown={preventSubmitWhileComposing}
                 onImagePaste={canAttach ? stagePastedImage : undefined}
                 onSubmit={submitDraft}
                 placeholder={placeholder}
@@ -1816,6 +1818,7 @@ export function Composer({
                 disabled={disabled}
                 maxHeight={MAX_HEIGHT_PX}
                 onChange={handleChange}
+                onKeyDown={preventSubmitWhileComposing}
                 onImagePaste={canAttach ? stagePastedImage : undefined}
                 onSubmit={submitDraft}
                 placeholder={placeholder}
