@@ -19,6 +19,7 @@ import {
   type ChangeEvent,
   type DragEvent,
   type FormEvent,
+  type KeyboardEvent,
   type ReactNode,
   useCallback,
   useEffect,
@@ -37,6 +38,7 @@ import {
   mediaTypeOf,
   shouldClaimPaste,
 } from "@/lib/channels/attachments";
+import { isComposing } from "@/lib/composing";
 import { newId } from "@/lib/new-id";
 import { cn } from "@/lib/utils";
 import { Button } from "../../ui/button";
@@ -1479,6 +1481,30 @@ export function Composer({
   };
 
   /**
+   * AN ENTER THAT CONFIRMS A CHARACTER IS NOT A SEND.
+   *
+   * Japanese, Chinese and Korean are typed through an input method, and Enter is how the character
+   * being built is confirmed. That press still arrives as a keydown with `key === "Enter"`, and
+   * `prompt-area` 0.6.x guards it with `nativeEvent.isComposing` only. Chromium marks the press
+   * that way, but WebKit sends it after `compositionend`, where `isComposing` is already false and
+   * only `keyCode === 229` identifies it — so the library's guard misses it and the draft goes out
+   * mid-word. The app already knows both shapes: `isComposing` in `@/lib/composing` checks exactly
+   * these two, and the New Bot sheet, the Bot name field and the boundary rule form all use it.
+   *
+   * PromptArea calls the caller's `onKeyDown` first and skips its own keydown handling when the
+   * event was already default-prevented, so preventing the press here is the whole fix: no
+   * dependency bump, no lockfile churn, and the library's own guard keeps covering the Chromium
+   * half. Both PromptArea instances get it — the compact branch and the full-size branch — because
+   * the confirming press reaches whichever one is on screen.
+   */
+  const handleEditorKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLDivElement>) => {
+      if (isComposing(event)) event.preventDefault();
+    },
+    [],
+  );
+
+  /**
    * There is a turn in flight and somewhere to park what is being typed.
    *
    * Not the same question as "is anything typed" — an empty composer mid-turn can queue nothing,
@@ -1723,6 +1749,7 @@ export function Composer({
                 minHeight={COMPACT_MIN_HEIGHT_PX}
                 onChange={handleChange}
                 onImagePaste={canAttach ? stagePastedImage : undefined}
+                onKeyDown={handleEditorKeyDown}
                 onSubmit={submitDraft}
                 placeholder={placeholder}
                 ref={promptAreaRef}
@@ -1817,6 +1844,7 @@ export function Composer({
                 maxHeight={MAX_HEIGHT_PX}
                 onChange={handleChange}
                 onImagePaste={canAttach ? stagePastedImage : undefined}
+                onKeyDown={handleEditorKeyDown}
                 onSubmit={submitDraft}
                 placeholder={placeholder}
                 ref={promptAreaRef}
